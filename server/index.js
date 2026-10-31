@@ -74,7 +74,7 @@ async function handlePost(req, res) {
         try {
             const payload = rawBody ? JSON.parse(rawBody) : {};
 
-            const { nom, tel, message, sessions } = payload;
+            const { nom, tel, facebook, message, sessions } = payload;
 
             if (!nom || !tel || !message || !Array.isArray(sessions) || sessions.length === 0) {
                 sendJson(res, 400, { error: 'Champs requis: nom, tel, message, sessions.' });
@@ -88,6 +88,7 @@ async function handlePost(req, res) {
                 createdAt,
                 nom,
                 tel,
+                facebook: facebook || '',
                 message,
                 sessions,
             };

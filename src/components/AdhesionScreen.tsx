@@ -32,6 +32,7 @@ export default function AdhesionScreen() {
     const data = {
       nom: (form.elements.namedItem("nom") as HTMLInputElement).value,
       tel: (form.elements.namedItem("telephone") as HTMLInputElement)?.value ?? "",
+      facebook: (form.elements.namedItem("facebook") as HTMLInputElement)?.value ?? "",
       message: (form.elements.namedItem("message") as HTMLTextAreaElement)?.value ?? "",
       sessions: selectedSessions,
     };
@@ -89,8 +90,13 @@ export default function AdhesionScreen() {
               </label>
 
               <label className="field">
-                <span>Téléphone *</span>
+                <span>WhatsApp *</span>
                 <input name="telephone" type="tel" placeholder="+229 ..." required />
+              </label>
+
+              <label className="field">
+                <span>Lien Facebook</span>
+                <input name="facebook" type="url" placeholder="https://facebook.com/ton.profil (laisse vide si tu n'en as pas)" />
               </label>
             </div>
 

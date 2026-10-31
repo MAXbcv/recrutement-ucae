@@ -289,11 +289,41 @@ function HomeScreen() {
   );
 }
 
+const FACEBOOK_GROUP_LINK_KEY = "ucae_facebook_group_link";
+
 function AdminScreen() {
   const [entries, setEntries] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [groupLink, setGroupLink] = useState(
+    () => window.localStorage.getItem(FACEBOOK_GROUP_LINK_KEY) ?? ""
+  );
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  function handleGroupLinkChange(value: string) {
+    setGroupLink(value);
+    window.localStorage.setItem(FACEBOOK_GROUP_LINK_KEY, value);
+  }
+
+  async function handleOpenProfileAndCopy(entry: Record<string, unknown>) {
+    const nom = String(entry.nom ?? "");
+    const lien = groupLink || "[lien du groupe à renseigner ci-dessus]";
+    const message = `Salut ${nom}, bienvenue à l'UCAE ! Rejoins notre groupe Facebook ici : ${lien}`;
+    const entryKey = String(entry.id ?? nom);
+
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedId(entryKey);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      window.prompt("Copie ce message manuellement :", message);
+    }
+
+    if (entry.facebook) {
+      window.open(String(entry.facebook), "_blank", "noopener,noreferrer");
+    }
+  }
 
   useEffect(() => {
     async function loadEntries() {
@@ -349,6 +379,7 @@ function AdminScreen() {
     entries.forEach((entry, index) => {
       const nom = String(entry.nom ?? "—");
       const tel = String(entry.tel ?? "—");
+      const facebook = String(entry.facebook ?? "—");
       const sessions = Array.isArray(entry.sessions) ? entry.sessions.join(", ") : "—";
       const message = String(entry.message ?? "—").replace(/\n/g, " ");
 
@@ -356,6 +387,8 @@ function AdminScreen() {
       doc.text(`${index + 1}. ${nom}`, 14, y);
       y += 8;
       doc.text(`Tél: ${tel}`, 14, y);
+      y += 8;
+      doc.text(`Facebook: ${facebook}`, 14, y);
       y += 8;
       doc.text(`Sessions: ${sessions}`, 14, y);
       y += 8;
@@ -390,6 +423,20 @@ function AdminScreen() {
           </div>
         </header>
 
+        <div className="admin-group-link" style={{ margin: "16px 0", display: "flex", flexDirection: "column", gap: 4 }}>
+          <label htmlFor="facebook-group-link" style={{ fontSize: 13, opacity: 0.8 }}>
+            Lien du groupe Facebook (utilisé pour générer les messages d'invitation)
+          </label>
+          <input
+            id="facebook-group-link"
+            type="url"
+            placeholder="https://facebook.com/groups/..."
+            value={groupLink}
+            onChange={(e) => handleGroupLinkChange(e.target.value)}
+            style={{ padding: "8px 12px", borderRadius: 6 }}
+          />
+        </div>
+
         {loading && <p className="admin-state">Chargement des inscriptions…</p>}
         {!loading && error && <p className="admin-error">{error}</p>}
 
@@ -406,19 +453,45 @@ function AdminScreen() {
                 <tr>
                   <th>Nom</th>
                   <th>Téléphone</th>
+                  <th>Facebook</th>
                   <th>Sessions</th>
                   <th>Message</th>
+                  <th>Groupe Facebook</th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
-                  <tr key={String(entry.id ?? entry.nom ?? Math.random())}>
-                    <td>{String(entry.nom ?? "—")}</td>
-                    <td>{String(entry.tel ?? "—")}</td>
-                    <td>{Array.isArray(entry.sessions) ? entry.sessions.join(", ") : "—"}</td>
-                    <td>{String(entry.message ?? "—")}</td>
-                  </tr>
-                ))}
+                {entries.map((entry) => {
+                  const entryKey = String(entry.id ?? entry.nom ?? Math.random());
+                  const hasFacebook = Boolean(entry.facebook);
+
+                  return (
+                    <tr key={entryKey}>
+                      <td>{String(entry.nom ?? "—")}</td>
+                      <td>{String(entry.tel ?? "—")}</td>
+                      <td>
+                        {hasFacebook ? (
+                          <a href={String(entry.facebook)} target="_blank" rel="noopener noreferrer">
+                            Voir le profil
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td>{Array.isArray(entry.sessions) ? entry.sessions.join(", ") : "—"}</td>
+                      <td>{String(entry.message ?? "—")}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-download-btn"
+                          disabled={!hasFacebook}
+                          onClick={() => handleOpenProfileAndCopy(entry)}
+                        >
+                          {copiedId === entryKey ? "Message copié ✓ (onglet ouvert)" : "Ouvrir le profil"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
